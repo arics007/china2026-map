@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Interactive 3D Map: 4-Week China Trip</title>
+  
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --primary: #2563eb; 
+      --primary-hover: #3b82f6;
+      --primary-glow: rgba(37, 99, 235, 0.4);
+      --bg-glass: rgba(15, 23, 42, 0.8);
+      --border-glass: rgba(255, 255, 255, 0.12);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-main: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body, html {
+      margin: 0; padding: 0;
+      width: 100%; height: 100%;
+      font-family: var(--font-main);
+      overflow: hidden;
+      background: #0f172a;
+    }
+
+    #map { width: 100vw; height: 100vh; }
+
+    /* Map Controls (Top Right on Desktop) */
+    .map-controls {
+      position: absolute;
+      top: 24px; right: 24px;
+      z-index: 1000;
+      display: flex;
+      gap: 10px;
+    }
+
+    .control-btn, .control-select {
+      background: var(--bg-glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-glass);
+      color: var(--text-main);
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-family: var(--font-main);
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      outline: none;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+
+    .control-btn:hover, .control-select:hover {
+      background: rgba(30, 41, 59, 0.9);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .control-select option { background: #0f172a; color: #fff; }
+
+    /* Glassmorphism Navigation Sidebar */
+    .sidebar {
+      position: absolute;
+      top: 24px; left: 24px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 280px;
+    }
+
+    .nav-card {
+      background: var(--bg-glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-glass);
+      border-radius: 16px;
+      padding: 14px 18px;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .nav-card:hover {
+      background: rgba(30, 41, 59, 0.9);
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateX(6px);
+    }
+
+    .nav-card.act {
+      border-color: var(--primary-hover);
+      background: rgba(37, 99, 235, 0.18);
+      box-shadow: 0 0 24px var(--primary-glow);
+    }
+
+    .nav-num {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      font-size: 14px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 2px 10px var(--primary-glow);
+    }
+
+    .nav-title { font-weight: 700; font-size: 15px; margin-bottom: 3px; }
+    .nav-subtitle { font-size: 11.5px; color: var(--text-muted); font-weight: 500; }
+
+    /* 100% Static Map Markers (Zero lag during pans/zooms) */
+    .city-mk {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      font-size: 14px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      border: 2px solid #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    /* Modifies static styles without changing layout parameters */
+    .city-mk.active-marker {
+      background: #fff;
+      color: var(--primary);
+      border: 3px solid var(--primary);
+      box-shadow: 0 12px 25px var(--primary-glow);
+    }
+
+    /* Clean POI Element Containers */
+    .poi-wrap {
+      display: block;
+    }
+    
+    /* Absolute visibility killer for clean layout zoom states */
+    .poi-wrap.hidden {
+      display: none !important;
+    }
+
+    .poi-mk {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.6);
+      cursor: pointer;
+    }
+
+    /* Mapbox Popup Overrides */
+    .mapboxgl-popup { z-index: 10000; }
+    .mapboxgl-popup-content {
+      background: rgba(15, 23, 42, 0.94) !important;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      color: var(--text-main) !important;
+      border-radius: 16px !important;
+      border: 1px solid var(--border-glass) !important;
+      box-shadow: 0 12px 35px rgba(0,0,0,0.6) !important;
+      padding: 16px !important;
+      font-family: var(--font-main);
+    }
+    .mapboxgl-popup-tip { 
+      border-top-color: rgba(15, 23, 42, 0.94) !important; 
+      border-bottom-color: rgba(15, 23, 42, 0.94) !important; 
+    }
+    
+    .pt { font-weight: 700; font-size: 15px; color: #60a5fa; margin: 0 0 3px; }
+    .pcn { font-size: 11px; color: var(--text-muted); margin: 0 0 8px; font-weight: 500; }
+    .pd { font-size: 12px; color: #e2e8f0; line-height: 1.55; margin: 0; }
+    
+    .ptag {
+      display: inline-block; font-size: 9px; font-weight: 700; text-transform: uppercase;
+      padding: 4px 8px; border-radius: 6px; margin: 10px 0 0; letter-spacing: 0.5px;
+    }
+    .ptag.days { background: rgba(37, 99, 235, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
+
+    /* Desktop Legend */
+    .legend {
+      position: absolute;
+      bottom: 24px; left: 24px;
+      z-index: 1000;
+      background: var(--bg-glass);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-glass);
+      border-radius: 14px;
+      padding: 14px 18px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    .legend-item { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-main); font-weight: 500; margin-bottom: 8px; }
+    .legend-item:last-child { margin-bottom: 0; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid #fff; }
+
+    /* =========================================================================
+       IPHONE / MOBILE STYLING
+       ========================================================================= */
+    @media (max-width: 768px) {
+      .map-controls {
+        top: 16px; left: 16px; right: 16px;
+        width: calc(100% - 32px);
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .control-btn, .control-select {
+        width: 100%;
+        padding: 10px;
+        font-size: 12px;
+        text-align: center;
+        box-sizing: border-box;
+      }
+
+      .sidebar {
+        top: auto; 
+        bottom: 16px; 
+        left: 0; 
+        right: 0;
+        width: 100vw;
+        flex-direction: row;
+        gap: 12px;
+        padding: 4px 16px 12px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        box-sizing: border-box;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .sidebar::-webkit-scrollbar { display: none; }
+
+      .nav-card {
+        flex-shrink: 0;
+        width: 250px;
+        padding: 12px 14px;
+        scroll-snap-align: center;
+        background: rgba(15, 23, 42, 0.9);
+      }
+
+      .legend { display: none; }
+      .mapboxgl-popup { max-width: 220px !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="map"></div>
+  
+  <div class="map-controls">
+    <select id="layer-select" class="control-select">
+      <option value="dark">Modern Dark</option>
+      <option value="satellite">Clean Satellite (Esri)</option>
+    </select>
+    <button id="projection-toggle" class="control-btn">Switch to 2D Map</button>
+  </div>
+
+  <div class="sidebar" id="sidebar"></div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#F97316"></div>Climbing gym</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#10B981"></div>Nature & scenic</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#8B5CF6"></div>Culture & history</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#EC4899"></div>Food & nightlife</div>
+  </div>
+
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+  <script>
+    // --- IMPORTANT: ADD YOUR MAPBOX TOKEN HERE ---
+    mapboxgl.accessToken = 'pk.eyJ1IjoiYXJpY3MiLCJhIjoiY21wZDh1bWpkMGFjaTJxcXo4YXh0aXh6cSJ9.pZdbPwg2be7AXkopx-SNag';
+
+    const CITIES = [
+      {name:'Beijing', cn:'北京', lat:39.9042, lng:116.4074, days:'Days 1–7', transport:'Air China LGW→PEK direct', desc:'Imperial history, Hutong alleys, and Beijing\'s premier bouldering community.', pois:[
+        {name:'Forbidden City', cn:'故宫', lat:39.9163, lng:116.3972, type:'culture', desc:'Book entry via WeChat Mini Program.'},
+        {name:'Let\'s Climb', cn:'岩时攀岩', lat:39.9302, lng:116.4553, type:'climb', desc:'Beijing\'s premier bouldering gym.'},
+        {name:'Mutianyu Great Wall', cn:'慕田峪长城', lat:40.4319, lng:116.5649, type:'nature', desc:'Far better and less crowded than Badaling.'},
+      ]},
+      {name:'Hangzhou', cn:'杭州', lat:30.2741, lng:120.1551, days:'Days 8–14', transport:'High-Speed Rail: Beijing → Hangzhou', desc:'Ancient tea culture meets Alibaba\'s cyberpunk tech capital.', pois:[
+        {name:'West Lake', cn:'西湖', lat:30.2590, lng:120.1475, type:'nature', desc:'Rent a bike and cycle the full perimeter.'},
+        {name:'Hangzhou Climbism', cn:'抱石空间', lat:30.2830, lng:120.1580, type:'climb', desc:'Hugely social gym driven by young tech workers.'},
+      ]},
+      {name:'Zhangjiajie', cn:'张家界', lat:29.1170, lng:110.4790, days:'Days 15–21', transport:'Fly: HGH → DYG', desc:'The real-world Avatar mountains. Towering quartzite pillars.', pois:[
+        {name:'Wulingyuan', cn:'武陵源风景区', lat:29.3257, lng:110.5318, type:'nature', desc:'The Avatar pillars in the flesh.'},
+        {name:'Tianmen Mountain', cn:'天门山', lat:29.0521, lng:110.4796, type:'nature', desc:'The giant natural arch and dramatic urban cable car.'},
+      ]},
+      {name:'Chongqing', cn:'重庆', lat:29.5630, lng:106.5516, days:'Days 22–28', transport:'High-Speed Rail: Zhangjiajie → Chongqing', desc:'A 3D labyrinth city built vertically across river gorges.', pois:[
+        {name:'Hongyadong', cn:'洪崖洞', lat:29.5575, lng:106.5776, type:'culture', desc:'Stacked riverside stilted architecture.'},
+        {name:'Pongo Bouldering', cn:'大坪店攀岩', lat:29.5510, lng:106.5042, type:'climb', desc:'Hardcore gym known for steep overhangs.'},
+      ]},
+    ];
+
+    const TYPE_C = { climb:'#F97316', nature:'#10B981', culture:'#8B5CF6', food:'#EC4899' };
+
+    // Initialize Mapbox Map
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/dark-v11',
+      projection: 'globe',
+      center: [20, 20],
+      zoom: 1.5,
+      pitch: 30
+    });
+
+    const isMobile = () => window.innerWidth <= 768;
+
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'bottom-right');
+
+    map.on('style.load', () => {
+      map.setFog({
+        'color': '#0f172a', 
+        'high-color': '#2563eb', 
+        'space-color': '#000000',
+        'star-intensity': 0.8
+      });
+
+      // Inject Esri Satellite Layer
+      map.addSource('esri-satellite-source', {
+        'type': 'raster',
+        'tiles': ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+        'tileSize': 256
+      });
+
+      map.addLayer({
+        'id': 'esri-satellite-layer',
+        'type': 'raster',
+        'source': 'esri-satellite-source',
+        'paint': { 'raster-opacity': 0, 'raster-opacity-transition': { duration: 400 } }
+      }, 'admin-1-boundary-bg');
+
+      drawTravelLines();
+    });
+
+    function drawTravelLines() {
+      const p1 = [116.4074, 39.9042], p2 = [120.1551, 30.2741], p3 = [110.4790, 29.1170], p4 = [106.5516, 29.5630];
+      const routes = [
+        { id: 'route1', coords: [p1, p2], color: '#60a5fa', dash: [4, 3] },
+        { id: 'route2', coords: [p2, p3], color: '#93c5fd', dash: [2, 4] },
+        { id: 'route3', coords: [p3, p4], color: '#60a5fa', dash: [4, 3] }
+      ];
+
+      routes.forEach(route => {
+        if (!map.getSource(route.id)) {
+          map.addSource(route.id, { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: route.coords } }});
+          map.addLayer({
+            id: route.id, type: 'line', source: route.id,
+            paint: { 'line-color': route.color, 'line-width': 2.5, 'line-dasharray': route.dash, 'line-opacity': 0.8 }
+          });
+        }
+      });
+    }
+
+    function popupHtml(name, cn, desc, tag) {
+      return `<p class="pt">${name}</p>${cn ? `<p class="pcn">${cn}</p>` : ''}<p class="pd">${desc}</p><span class="ptag days">${tag}</span>`;
+    }
+
+    const cityMs = [];
+    const poiElements = []; 
+    let currentActive = null;
+    const sidebar = document.getElementById('sidebar');
+
+    CITIES.forEach((city, i) => {
+      // Build UI Cards
+      const card = document.createElement('div');
+      card.className = 'nav-card'; card.id = `nav${i}`;
+      card.innerHTML = `<div class="nav-num">${i+1}</div><div><div class="nav-title">${city.name}</div><div class="nav-subtitle">${city.cn} · ${city.days}</div></div>`;
+      card.onclick = () => fly(i);
+      sidebar.appendChild(card);
+
+      // Main City Marker Wrapper (No internal animation transitions to prevent map lag)
+      const markerContainer = document.createElement('div');
+      const el = document.createElement('div');
+      el.className = 'city-mk'; el.id = `mk${i}`; el.innerHTML = i+1;
+      markerContainer.appendChild(el);
+
+      const popup = new mapboxgl.Popup({ offset: 20, closeButton: false, maxWidth: isMobile() ? '210px' : '250px' })
+        .setHTML(popupHtml(city.name, city.cn, `${city.transport}<br><br>${city.desc}`, city.days));
+
+      const marker = new mapboxgl.Marker(markerContainer).setLngLat([city.lng, city.lat]).setPopup(popup).addTo(map);
+      
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        fly(i);
+      });
+      cityMs.push({ marker, popup });
+
+      // Build Sub-Landmark POIs (Start hidden by default)
+      city.pois.forEach(poi => {
+        const pContainer = document.createElement('div');
+        pContainer.className = 'poi-wrap hidden'; 
+        
+        const pEl = document.createElement('div');
+        pEl.className = 'poi-mk'; pEl.style.background = TYPE_C[poi.type];
+        pContainer.appendChild(pEl);
+
+        const pPopup = new mapboxgl.Popup({ offset: 10, closeButton: false, maxWidth: '230px' })
+          .setHTML(popupHtml(poi.name, poi.cn, poi.desc, poi.type));
+          
+        new mapboxgl.Marker(pContainer).setLngLat([poi.lng, poi.lat]).setPopup(pPopup).addTo(map);
+        
+        poiElements.push(pContainer); 
+      });
+    });
+
+    // Control Visibility strictly through display blocks on map actions
+    function handleZoomVisibility() {
+      const currentZoom = map.getZoom();
+      const detailedViewThreshold = 8.5; // Pins hide instantly if zoomed further out than this
+
+      poiElements.forEach(el => {
+        if (currentZoom >= detailedViewThreshold) {
+          el.classList.remove('hidden');
+        } else {
+          el.classList.add('hidden');
+        }
+      });
+    }
+
+    // Attach to map viewport updates to keep track of visibility requirements
+    map.on('zoom', handleZoomVisibility);
+    map.on('move', handleZoomVisibility);
+
+    function setActive(i) {
+      CITIES.forEach((_, j) => {
+        document.getElementById(`nav${j}`).classList.toggle('act', j === i);
+        document.getElementById(`mk${j}`).classList.toggle('active-marker', j === i);
+      });
+
+      if (isMobile()) {
+        const activeCard = document.getElementById(`nav${i}`);
+        sidebar.scrollTo({ left: activeCard.offsetLeft - (window.innerWidth / 2) + (activeCard.offsetWidth / 2), behavior: 'smooth' });
+      }
+    }
+
+    window.fly = function(i) {
+      setActive(i);
+      map.flyTo({
+        center: [CITIES[i].lng, CITIES[i].lat],
+        zoom: isMobile() ? 8.5 : 10, 
+        pitch: isGlobe ? 45 : 0, 
+        duration: 2200,
+        essential: true
+      });
+      
+      if(currentActive !== null && currentActive !== i) cityMs[currentActive].popup.remove();
+      setTimeout(() => cityMs[i].marker.togglePopup(), 2200);
+      currentActive = i;
+    };
+
+    // UI Toggle: Projection Switcher
+    let isGlobe = true;
+    const projBtn = document.getElementById('projection-toggle');
+    projBtn.addEventListener('click', () => {
+      isGlobe = !isGlobe;
+      map.setProjection(isGlobe ? 'globe' : 'mercator');
+      projBtn.innerText = isGlobe ? 'Switch to 2D Map' : 'Switch to 3D Globe';
+      map.flyTo({ pitch: isGlobe ? 45 : 0 });
+    });
+
+    // UI Toggle: Layer Switcher
+    document.getElementById('layer-select').addEventListener('change', (e) => {
+      const targetLayer = e.target.value;
+      if (targetLayer === 'satellite') {
+        map.setPaintProperty('esri-satellite-layer', 'raster-opacity', 1);
+      } else {
+        map.setPaintProperty('esri-satellite-layer', 'raster-opacity', 0);
+      }
+    });
+
+    // Intro Fly-in Sequence
+    setTimeout(() => {
+      map.flyTo({ center: [105, 35], zoom: isMobile() ? 3.2 : 4, pitch: 40, duration: 3800, essential: true });
+      setTimeout(() => fly(0), 4100);
+    }, 500);
+
+  </script>
+</body>
+</html>
