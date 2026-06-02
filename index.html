@@ -116,12 +116,13 @@
     .nav-title { font-weight: 700; font-size: 15px; margin-bottom: 3px; }
     .nav-subtitle { font-size: 11.5px; color: var(--text-muted); font-weight: 500; }
 
-    /* 100% Static Map Markers (Zero lag during pans/zooms) */
+    /* 100% Static Map Markers (Forced Clean Font Family) */
     .city-mk {
       width: 32px; height: 32px;
       border-radius: 50%;
       background: var(--primary);
       color: #fff;
+      font-family: var(--font-main) !important;
       font-size: 14px; font-weight: 700;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer;
@@ -129,7 +130,6 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     }
 
-    /* Modifies static styles without changing layout parameters */
     .city-mk.active-marker {
       background: #fff;
       color: var(--primary);
@@ -137,15 +137,8 @@
       box-shadow: 0 12px 25px var(--primary-glow);
     }
 
-    /* Clean POI Element Containers */
-    .poi-wrap {
-      display: block;
-    }
-    
-    /* Absolute visibility killer for clean layout zoom states */
-    .poi-wrap.hidden {
-      display: none !important;
-    }
+    .poi-wrap { display: block; }
+    .poi-wrap.hidden { display: none !important; }
 
     .poi-mk {
       width: 14px; height: 14px;
@@ -166,7 +159,7 @@
       border: 1px solid var(--border-glass) !important;
       box-shadow: 0 12px 35px rgba(0,0,0,0.6) !important;
       padding: 16px !important;
-      font-family: var(--font-main);
+      font-family: var(--font-main) !important;
     }
     .mapboxgl-popup-tip { 
       border-top-color: rgba(15, 23, 42, 0.94) !important; 
@@ -211,39 +204,22 @@
         gap: 8px;
       }
       .control-btn, .control-select {
-        width: 100%;
-        padding: 10px;
-        font-size: 12px;
-        text-align: center;
-        box-sizing: border-box;
+        width: 100%; padding: 10px; font-size: 12px; text-align: center; box-sizing: border-box;
       }
 
       .sidebar {
-        top: auto; 
-        bottom: 16px; 
-        left: 0; 
-        right: 0;
-        width: 100vw;
-        flex-direction: row;
-        gap: 12px;
-        padding: 4px 16px 12px;
-        overflow-x: auto;
-        overflow-y: hidden;
-        box-sizing: border-box;
-        scroll-snap-type: x mandatory;
+        top: auto; bottom: 16px; left: 0; right: 0;
+        width: 100vw; flex-direction: row; gap: 12px;
+        padding: 4px 16px 12px; overflow-x: auto; overflow-y: hidden;
+        box-sizing: border-box; scroll-snap-type: x mandatory;
         -webkit-overflow-scrolling: touch;
       }
-
       .sidebar::-webkit-scrollbar { display: none; }
 
       .nav-card {
-        flex-shrink: 0;
-        width: 250px;
-        padding: 12px 14px;
-        scroll-snap-align: center;
-        background: rgba(15, 23, 42, 0.9);
+        flex-shrink: 0; width: 250px; padding: 12px 14px;
+        scroll-snap-align: center; background: rgba(15, 23, 42, 0.9);
       }
-
       .legend { display: none; }
       .mapboxgl-popup { max-width: 220px !important; }
     }
@@ -275,23 +251,32 @@
     // --- IMPORTANT: ADD YOUR MAPBOX TOKEN HERE ---
     mapboxgl.accessToken = 'pk.eyJ1IjoiYXJpY3MiLCJhIjoiY21wZWVtM2I1MDRtazJycXZ2MXlwa2s2NyJ9.LFUdjNgGBNqK6LeM9HCUIQ';
 
+    // Updated 6-City Route based exactly on your spreadsheet logs
     const CITIES = [
-      {name:'Beijing', cn:'北京', lat:39.9042, lng:116.4074, days:'Days 1–7', transport:'Air China LGW→PEK direct', desc:'Imperial history, Hutong alleys, and Beijing\'s premier bouldering community.', pois:[
+      {name:'Beijing', cn:'北京', lat:39.9042, lng:116.4074, days:'June 23–28', transport:'Flight: LHR → PKX (£736)', desc:'Imperial history, Hutong alleys, and Beijing\'s premier bouldering community.', pois:[
         {name:'Forbidden City', cn:'故宫', lat:39.9163, lng:116.3972, type:'culture', desc:'Book entry via WeChat Mini Program.'},
         {name:'Let\'s Climb', cn:'岩时攀岩', lat:39.9302, lng:116.4553, type:'climb', desc:'Beijing\'s premier bouldering gym.'},
         {name:'Mutianyu Great Wall', cn:'慕田峪长城', lat:40.4319, lng:116.5649, type:'nature', desc:'Far better and less crowded than Badaling.'},
       ]},
-      {name:'Hangzhou', cn:'杭州', lat:30.2741, lng:120.1551, days:'Days 8–14', transport:'High-Speed Rail: Beijing → Hangzhou', desc:'Ancient tea culture meets Alibaba\'s cyberpunk tech capital.', pois:[
+      {name:'Hangzhou', cn:'杭州', lat:30.2741, lng:120.1551, days:'June 29 – July 7', transport:'Train: BJN → HGH (£75)', desc:'Ancient tea culture meets Alibaba\'s cyberpunk tech capital. Cycle West Lake at dawn.', pois:[
         {name:'West Lake', cn:'西湖', lat:30.2590, lng:120.1475, type:'nature', desc:'Rent a bike and cycle the full perimeter.'},
         {name:'Hangzhou Climbism', cn:'抱石空间', lat:30.2830, lng:120.1580, type:'climb', desc:'Hugely social gym driven by young tech workers.'},
       ]},
-      {name:'Zhangjiajie', cn:'张家界', lat:29.1170, lng:110.4790, days:'Days 15–21', transport:'Fly: HGH → DYG', desc:'The real-world Avatar mountains. Towering quartzite pillars.', pois:[
-        {name:'Wulingyuan', cn:'武陵源风景区', lat:29.3257, lng:110.5318, type:'nature', desc:'The Avatar pillars in the flesh.'},
-        {name:'Tianmen Mountain', cn:'天门山', lat:29.0521, lng:110.4796, type:'nature', desc:'The giant natural arch and dramatic urban cable car.'},
+      {name:'Changsha', cn:'长沙', lat:28.2282, lng:112.9388, days:'July 7–10', transport:'Train: HGH → CHS (£65)', desc:'Vibrant local street food scene, home of spicy Hunan cuisine and Orange Isle.', pois:[
+        {name:'Orange Isle', cn:'橘子洲', lat:28.1812, lng:112.9601, type:'nature', desc:'Stunning massive park island sitting in the middle of the Xiang River.'},
+        {name:'Hunan Museum', cn:'湖南博物院', lat:28.2142, lng:112.9930, type:'culture', desc:'Houses the legendary Mawangdui Han Tombs and ancient artifacts.'}
       ]},
-      {name:'Chongqing', cn:'重庆', lat:29.5630, lng:106.5516, days:'Days 22–28', transport:'High-Speed Rail: Zhangjiajie → Chongqing', desc:'A 3D labyrinth city built vertically across river gorges.', pois:[
-        {name:'Hongyadong', cn:'洪崖洞', lat:29.5575, lng:106.5776, type:'culture', desc:'Stacked riverside stilted architecture.'},
-        {name:'Pongo Bouldering', cn:'大坪店攀岩', lat:29.5510, lng:106.5042, type:'climb', desc:'Hardcore gym known for steep overhangs.'},
+      {name:'Zhangjiajie', cn:'张家界', lat:29.1170, lng:110.4790, days:'July 10–13', transport:'Train: CHS → ZJJ (£35)', desc:'The real-world Avatar mountains. Towering quartzite pillars and high canyon trails.', pois:[
+        {name:'Wulingyuan Scenic Area', cn:'武陵源', lat:29.3257, lng:110.5318, type:'nature', desc:'The core Avatar pillars. Take the Bailong Elevator up the cliff.'},
+        {name:'Tianmen Mountain', cn:'天门山', lat:29.0521, lng:110.4796, type:'nature', desc:'The giant natural arch and dramatic urban mountain cable car.'},
+      ]},
+      {name:'Chongqing', cn:'重庆', lat:29.5630, lng:106.5516, days:'July 13–17', transport:'Train: ZJJ → CHQ (£50)', desc:'A 3D labyrinth city built vertically across river gorges. World-famous hotpot.', pois:[
+        {name:'Hongyadong', cn:'洪崖洞', lat:29.5575, lng:106.5776, type:'culture', desc:'Stacked riverside stilted architecture fully illuminated at night.'},
+        {name:'Pongo Bouldering', cn:'大坪店攀岩', lat:29.5510, lng:106.5042, type:'climb', desc:'Hardcore gym known for powerful overhang settings.'},
+      ]},
+      {name:'Chengdu', cn:'成都', lat:30.5728, lng:104.0668, days:'July 17–21', transport:'Train: CHQ → CHD (£31)', desc:'The chill capital of Sichuan. Home of giant pandas, tea houses, and major climbing gyms.', pois:[
+        {name:'Panda Breeding Base', cn:'成都大熊猫繁育基地', lat:30.7335, lng:104.1441, type:'nature', desc:'The world-famous sanctuary dedicated to giant panda conservation.'},
+        {name:'Rockscout Climbing', cn:'裂缝攀岩', lat:30.6310, lng:104.0750, type:'climb', desc:'Fantastic community hub for bouldering in the heart of Chengdu.'}
       ]},
     ];
 
@@ -313,23 +298,17 @@
 
     map.on('style.load', () => {
       map.setFog({
-        'color': '#0f172a', 
-        'high-color': '#2563eb', 
-        'space-color': '#000000',
-        'star-intensity': 0.8
+        'color': '#0f172a', 'high-color': '#2563eb', 'space-color': '#000000', 'star-intensity': 0.8
       });
 
-      // Inject Esri Satellite Layer
+      // Inject Clean Esri Tiles
       map.addSource('esri-satellite-source', {
         'type': 'raster',
         'tiles': ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
         'tileSize': 256
       });
-
       map.addLayer({
-        'id': 'esri-satellite-layer',
-        'type': 'raster',
-        'source': 'esri-satellite-source',
+        'id': 'esri-satellite-layer', 'type': 'raster', 'source': 'esri-satellite-source',
         'paint': { 'raster-opacity': 0, 'raster-opacity-transition': { duration: 400 } }
       }, 'admin-1-boundary-bg');
 
@@ -337,11 +316,17 @@
     });
 
     function drawTravelLines() {
-      const p1 = [116.4074, 39.9042], p2 = [120.1551, 30.2741], p3 = [110.4790, 29.1170], p4 = [106.5516, 29.5630];
+      // Coordinates mapping out the complete 6-city chain
+      const p1 = [116.4074, 39.9042], p2 = [120.1551, 30.2741], p3 = [112.9388, 28.2282];
+      const p4 = [110.4790, 29.1170], p5 = [106.5516, 29.5630], p6 = [104.0668, 30.5728];
+      
       const routes = [
         { id: 'route1', coords: [p1, p2], color: '#60a5fa', dash: [4, 3] },
-        { id: 'route2', coords: [p2, p3], color: '#93c5fd', dash: [2, 4] },
-        { id: 'route3', coords: [p3, p4], color: '#60a5fa', dash: [4, 3] }
+        { id: 'route2', coords: [p2, p3], color: '#60a5fa', dash: [4, 3] },
+        { id: 'route3', coords: [p3, p4], color: '#60a5fa', dash: [4, 3] },
+        { id: 'route4', coords: [p4, p5], color: '#60a5fa', dash: [4, 3] },
+        { id: 'route5', coords: [p5, p6], color: '#60a5fa', dash: [4, 3] },
+        { id: 'route6', coords: [p6, p1], color: '#3b82f6', dash: [4, 10], opacity: 0.3 } // Return route back north
       ];
 
       routes.forEach(route => {
@@ -349,7 +334,7 @@
           map.addSource(route.id, { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: route.coords } }});
           map.addLayer({
             id: route.id, type: 'line', source: route.id,
-            paint: { 'line-color': route.color, 'line-width': 2.5, 'line-dasharray': route.dash, 'line-opacity': 0.8 }
+            paint: { 'line-color': route.color, 'line-width': 2.5, 'line-dasharray': route.dash, 'line-opacity': route.opacity || 0.8 }
           });
         }
       });
@@ -365,14 +350,14 @@
     const sidebar = document.getElementById('sidebar');
 
     CITIES.forEach((city, i) => {
-      // Build UI Cards
+      // Card Creation
       const card = document.createElement('div');
       card.className = 'nav-card'; card.id = `nav${i}`;
       card.innerHTML = `<div class="nav-num">${i+1}</div><div><div class="nav-title">${city.name}</div><div class="nav-subtitle">${city.cn} · ${city.days}</div></div>`;
       card.onclick = () => fly(i);
       sidebar.appendChild(card);
 
-      // Main City Marker Wrapper (No internal animation transitions to prevent map lag)
+      // Map Container Wrappers (Zero transitions inside container styles eliminates panning glitches)
       const markerContainer = document.createElement('div');
       const el = document.createElement('div');
       el.className = 'city-mk'; el.id = `mk${i}`; el.innerHTML = i+1;
@@ -389,7 +374,7 @@
       });
       cityMs.push({ marker, popup });
 
-      // Build Sub-Landmark POIs (Start hidden by default)
+      // Landmark POIs (Start hidden to avoid clogging up national view)
       city.pois.forEach(poi => {
         const pContainer = document.createElement('div');
         pContainer.className = 'poi-wrap hidden'; 
@@ -407,10 +392,10 @@
       });
     });
 
-    // Control Visibility strictly through display blocks on map actions
+    // Zoom Visibility Rules (Strictly toggled via hidden class matching layout rendering loops)
     function handleZoomVisibility() {
       const currentZoom = map.getZoom();
-      const detailedViewThreshold = 8.5; // Pins hide instantly if zoomed further out than this
+      const detailedViewThreshold = 8.5; // Pins hide completely until zoomed past this value
 
       poiElements.forEach(el => {
         if (currentZoom >= detailedViewThreshold) {
@@ -421,7 +406,6 @@
       });
     }
 
-    // Attach to map viewport updates to keep track of visibility requirements
     map.on('zoom', handleZoomVisibility);
     map.on('move', handleZoomVisibility);
 
@@ -474,7 +458,7 @@
 
     // Intro Fly-in Sequence
     setTimeout(() => {
-      map.flyTo({ center: [105, 35], zoom: isMobile() ? 3.2 : 4, pitch: 40, duration: 3800, essential: true });
+      map.flyTo({ center: [108, 33], zoom: isMobile() ? 3.2 : 4, pitch: 40, duration: 3800, essential: true });
       setTimeout(() => fly(0), 4100);
     }, 500);
 
